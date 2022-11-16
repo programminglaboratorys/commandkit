@@ -8,28 +8,27 @@ classifiers = [
   'License :: OSI Approved :: MIT License'
 ]
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __author__  = 'programminglaboratorys'
 
 setup = SetupFast(
   year = datetime.datetime.now().year,
   name='commandkit',
   version=__version__,
-  description="",
+  description="easy tool to parse string to commands, easy tool to create commandlines",
   author=__author__,
   author_email='programming.laboratorys@gmail.com',
   classifiers=__import__("json").dumps(classifiers,indent=2),
   keywords='commandkit,command,commandline,basic,commander',
   install_requires=[]
 )
-
-setup.readme += """
+setup.readme = setup.readme+"""
 
 need help? or have bugs to report, let me know in [here](https://discord.gg/vzEZnC7CM8)
 
 ## simple example
 ```python
-from UnknownName.commander import CommandLine
+from commandkit.commander import CommandLine
 cmder = CommandLine() # class
 
 @cmder.command(name="foo") # if name is None take function name
@@ -43,11 +42,14 @@ def bar(num:int):
 
 cmder.process_command("foo kick 10")
 ```
+
 # docs
 
 **Soon**
 
 """
+
+
 def ef(f,mode="w"):
   if "setup" not in f.name:
     try:
@@ -58,14 +60,18 @@ def ef(f,mode="w"):
   print("exporting",f.name,end="")
   s= __export_file__(f,mode="w")
   print(", done")
+# __import__("datetime").datetime.fromtimestamp(__import__("time").time()).strftime("%Y/%m/%d")
+logs = {"0.1.0":{
+            "date": "2022/11/16",
+            "context":["First Release"]},
+        "0.1.1":{
+            "date": "2022/11/16",
+            "context":["fix README.md"]},
+        }
 
-logs = {__version__:{
-            "date":__import__("datetime").datetime.fromtimestamp(__import__("time").time()).strftime("%Y/%m/%d"),
-            "context":["First Release"]}
-            }
-
-setup.setup(logs,"TOKEN",
+setup.setup(logs,"",
 	__export_file__=lambda f:ef(f,mode="w"))
+
 from os.path import join,split
 import sys
 if __name__ == "__main__":

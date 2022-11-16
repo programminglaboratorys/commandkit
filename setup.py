@@ -7,9 +7,9 @@ classifiers = [
   "License :: OSI Approved :: MIT License"
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = 'programminglaboratorys'
-__description__ = ''
+__description__ = 'easy tool to parse string to commands, easy tool to create commandlines'
 _long_description_ = open('README.md').read() + "\n\n" + open("CHANGELOG.txt").read()
 if __name__ == '__main__':
 	setup(
