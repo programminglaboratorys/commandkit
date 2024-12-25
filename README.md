@@ -1,6 +1,6 @@
 # commandkit
 
-easy tool to parse string to commands, easy tool to create commandlines
+simple library to implement commands, events dispatchers
 
 # installation
 
