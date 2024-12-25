@@ -23,7 +23,7 @@ need help? or have bugs to report, let me know in [here](https://discord.gg/vzEZ
 ## simple example
 
 ```python
-from commandkit.commander import CommandLine
+from commandkit import CommandLine
 cmder = CommandLine()
 
 @cmder.command(name="foo")
@@ -39,6 +39,6 @@ cmder.process_command("foo kick 10")
 print(cmder.process_command("bar 10")) # output: 50
 ```
 
-# docs
+# Documentation
 
-**very Soon**
+you can check commandkit docs [here](https://commandkit.readthedocs.io/en/latest/)

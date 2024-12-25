@@ -27,5 +27,6 @@ dev = [
 
 [project.urls]
 Changelog = "https://github.com/programminglaboratorys/commandkit/blob/main/CHANGELOG"
+Documentation = "https://commandkit.readthedocs.io/en/latest/"
 Homepage = "https://github.com/programminglaboratorys/commandkit"
 Issues = "https://github.com/programminglaboratorys/commandkit/issues"
