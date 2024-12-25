@@ -1,84 +1,143 @@
+"""a module containing Classes and functions to parse and manage command strings"""
+
+from typing import Iterable
 from .parser import eval_args
 
-class StringError(Exception):
-	""" basic StringError exception """
 
-class NoPrefixError(StringError):
-	""" raise when str doesn't starts with prefix(s) """
+class PrefixError(Exception):
+    """raise when str doesn't starts with prefix(s)"""
 
-class CommandString(str):
-	def get_word(self):
-		word = CommandString()
-		for char in self:
-			if char.isspace(): return word
-			word+=char
-		return word
-	def skip_prefix(self,prefix):
-		""" skip prefix(s) if string doesn't starts with prefix(s) raise NoPrefixError() 
-		if str(self) == str(prefix) returns None
-		"""
-		if not self.startswith(prefix):
-			raise NoPrefixError("the str doesn't start with prefix(s)")
-		if str(self) == str(prefix):
-			return None
-		tok = CommandString()
-		found_prefix = False
-		for char in self:
-			if tok.startswith(prefix) and not found_prefix:
-				tok = CommandString()
-				tok+= char
-				found_prefix = True
-			else:
-				tok+= char
-		return tok
-	def __add__(self,other):
-		return CommandString(str(self)+other)
-	def __mul__(self,other):
-		return CommandString(str(self)*value)
-	def  __rmul__(self, value):
-		return CommandString(value*str(self))
-	def strip(self,*args,**kw):
-		return CommandString(str(self).strip(*args,**kw))
-	def lstrip(self,*args,**kw):
-		return CommandString(str(self).lstrip(*args,**kw))
-	def rstrip(self,*args,**kw):
-		return CommandString(str(self).rstrip(*args,**kw))
-	def split(self,*args,**kw):
-		return [CommandString(w) for w in str(self).split(*args,**kw)]
-	def __repr__(self):
-		return f"{type(self).__name__}({repr(str(self))})"
+
+def get_word(string: str) -> str:
+    """take whatever the first word of string
+
+    Parameters
+    ----------
+        string: str
+                the string to take the first word
+
+    Returns
+    -------
+        str
+                the first word of the string
+    """
+    return str(string).split()[0]
+
+
+def skip_prefix(string: str, prefix: str):
+    """skip prefix(s) if string doesn't starts with prefix(s) raise PrefixError()
+    if string equal prefix returns an empty string("") else remove the prefix
+    """
+    if not string.startswith(prefix):
+        raise PrefixError(f"the {string!r} doesn't start with prefix({prefix!r})")
+    return string.removeprefix(prefix)
+
 
 # Base.py
 class CommandError(Exception):
-	""" basic CommandError exception """
-
-class InvaildCommandError(CommandError):
-	""" when entered a command doesn't start with prefix or command is None or empty """
+    """basic CommandError exception"""
 
 
-class BaseCommand(object):
-	def __init__(self, prefix: [str, CommandString]):
-		super(BaseCommand, self).__init__()
-		if not isinstance(prefix,(CommandString,str)):
-			raise ValueError(f"excepted str/CommandString but got ({repr(type(prefix).__name__)}) instead")
-		self.prefix = CommandString(prefix)
-	def startswith_prefix(self,string:str):
-		return str(string) \
-							.startswith(self.prefix)
-	def process_string(self,EA:list,string:str,allow_overflow:bool=True,**kw):
-		if not self.startswith_prefix(string):
-			raise InvaildCommandError(f"command must start with prefix({repr(self.prefix)})")
-		args = CommandString(string).strip().skip_prefix(self.prefix)
-		return eval_args(EA,args,allow_overflow=allow_overflow)
-	def get_command_name(self,string:str):
-		args = CommandString(string).strip().skip_prefix(self.prefix)
-		if args is not None:
-			args = args.split()
-		return args[0] if args else None
-	def get_command_args(self,string:str):
-		""" return none if string == prefix """
-		args = CommandString(string).strip().skip_prefix(self.prefix)
-		return args.split() if args is not None else args
+class InvalidCommandError(CommandError):
+    """when entered a command doesn't start with prefix or command is None or empty"""
 
 
+class CommandParser:
+    """
+    A class to parse and manage command strings with a specified prefix.
+    """
 
+    prefix: str
+    """The prefix that command strings must start with."""
+
+    def parse(self, string: str) -> Iterable[str]:
+        """parse the input string
+
+        Parameters
+        ----------
+            string: str
+                the string to parse
+
+        Returns
+        -------
+            Iterable[str]
+                the parsed string
+        """
+        return str.split(skip_prefix(string, self.prefix))
+
+    def __init__(self, prefix: str):
+        if not isinstance(prefix, str):
+            raise ValueError(
+                f"excepted str but got ({type(prefix).__name__!r}) instead"
+            )
+        if " " in prefix:
+            raise PrefixError("prefix should not contain spaces")
+        self.prefix = prefix
+
+    def startswith_prefix(self, string: str) -> bool:
+        """check if the input string start with prefix(s)"""
+        return string.startswith(self.prefix)
+
+    def process_string(
+        self, expected_args: list[str], string: str, allow_overflow: bool = True
+    ) -> tuple[dict[str, str | list[str]], list[str]]:
+        """wrapper function of eval_args
+
+
+        Parameters
+        ----------
+            expected_args: list[str]
+                the format of the arguments
+            string: str
+                string to be split
+            allow_overflow: bool (default: True)
+                whether to allow extra arguments
+
+        Raises
+        ------
+            InvalidCommandError
+                if the command doesn't start with prefix or command is None or empty
+
+        Returns
+        -------
+            tuple[dict[str, str | list[str]], list[str]]
+                tuple of two elements; the arguments, the remaining arguments
+
+        """
+        if self.startswith_prefix(string):
+            return eval_args(
+                expected_args, self.parse(string.strip()), allow_overflow=allow_overflow
+            )
+        raise InvalidCommandError(f"command must start with prefix({self.prefix!r})")
+
+    def get_command_name(self, string: str):
+        """get command name from string
+
+        Parameters
+        ----------
+            string: str
+                string to be parsed
+
+        Returns
+        -------
+            str
+                command name
+        """
+        args = self.parse(string)
+        return args[0] if args else ""
+
+    def get_command_args(self, string: str):
+        """get command args from string
+
+        Parameters
+        ----------
+            string: str
+                string to be parsed
+
+        Returns
+        -------
+            list[str]
+                command args
+        """
+        args = self.parse(string)[1::]  # remove the command name
+        return args

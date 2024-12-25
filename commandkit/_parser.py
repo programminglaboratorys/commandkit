@@ -1,28 +1,44 @@
-""" code by Craig McQueen('How to parse strings to look like sys.argv') """
+""" module for parsing strings to argv
+code by Craig McQueen('How to parse strings to look like sys.argv') """
 
 import sys
 
-_WORD_DIVIDERS = set((' ', '\t', '\r', '\n'))
+_WORD_DIVIDERS = {" ", "\t", "\r", "\n"}
 
 _QUOTE_CHARS_DICT = {
-    '\\':   '\\',
-    ' ':    ' ',
-    '"':    '"',
-    'r':    '\r',
-    'n':    '\n',
-    't':    '\t',
+    "\\": "\\",
+    " ": " ",
+    '"': '"',
+    "r": "\r",
+    "n": "\n",
+    "t": "\t",
 }
+
 
 def _raise_type_error():
     raise TypeError("Bytes must be decoded to Unicode first")
 
-def parse_to_argv_gen(instring):
+
+def parse_to_argv_gen(string: str):
+    """
+    generator that takes a string and yields a list of argv.
+    it simulates how argv are parsed in windows command prompt
+
+    Parameters
+    ----------
+    string: str
+        the string to be parsed
+
+    Yields
+    ------
+    str
+    """
     is_in_quotes = False
-    instring_iter = iter(instring)
-    join_string = instring[0:0]
+    instring_iter = iter(string)
+    join_string = string[0:0]
 
     c_list = []
-    c = ' '
+    c = " "
     while True:
         # Skip whitespace
         try:
@@ -44,7 +60,7 @@ def parse_to_argv_gen(instring):
                 if c == '"':
                     is_in_quotes = not is_in_quotes
                     c = None
-                elif c == '\\':
+                elif c == "\\":
                     c = next(instring_iter)
                     c = _QUOTE_CHARS_DICT.get(c)
                 if c is not None:
@@ -56,5 +72,20 @@ def parse_to_argv_gen(instring):
             yield join_string.join(c_list)
             break
 
-def parse_to_argv(instring):
-    return list(parse_to_argv_gen(instring))
+
+def parse_to_argv(string: str) -> list[str]:
+    """
+    wrapper of :func:`_parser.parse_to_argv_gen`.
+    generator that takes a string and return a list of argv.
+    it simulates how argv are parsed in windows command prompt
+
+    Parameters
+    ----------
+    string: str
+        the string to be parsed
+
+    Returns
+    -------
+        list[str]
+    """
+    return list(parse_to_argv_gen(string))

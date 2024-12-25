@@ -1,0 +1,31 @@
+[project]
+name = "commandkit"
+version = "0.2.0"
+############
+
+description = "simple library to implement commands, events dispatchers"
+readme = "README.md"
+keywords = ["commands", "python3", "commandkit", "events"]
+license = { file = "LICENSE" }
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "sphinx",
+    "sphinx-rtd-theme"
+    ]
+
+
+[project.urls]
+Changelog = "https://github.com/programminglaboratorys/commandkit/blob/main/CHANGELOG"
+Homepage = "https://github.com/programminglaboratorys/commandkit"
+Issues = "https://github.com/programminglaboratorys/commandkit/issues"

@@ -1,0 +1,16 @@
+{
+  "workbench.colorCustomizations": {
+    "minimap.background": "#00000000",
+    "scrollbar.shadow": "#00000000"
+  },
+  //"AREPL.pythonPath": "C:\\Users\\ACER\\Desktop\\myproject\\python-gamejolt-api\\src\\env\\Scripts\\python.exe",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
+  },
+  "_black-formatter.interpreter": [
+    "C:\\Uers\\ACER\\Desktop\\oject\\pythn-gamejolt-api\\src\\env\\Scripts\\python.exe"
+  ],
+
+  "autoDocstring.customTemplatePath": "C:\\Users\\ACER\\Desktop\\myproject\\commandkit\\.mustache"
+}
