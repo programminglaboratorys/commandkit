@@ -65,7 +65,8 @@ class CommandParser:
         """
         return str.split(skip_prefix(string, self.prefix))
 
-    def __init__(self, prefix: str):
+    def __init__(self, prefix: str, **kwargs):
+        super().__init__(**kwargs)
         if not isinstance(prefix, str):
             raise ValueError(
                 f"excepted str but got ({type(prefix).__name__!r}) instead"

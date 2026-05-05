@@ -99,7 +99,8 @@ class BasicCommands:
             name = name.__name__
         return name
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.commands = {}
 
     def add_command(
@@ -216,7 +217,7 @@ class Commander(Commands, CommandParser):
     """
 
     def __init__(self, prefix: str):
-        super().__init__()
+        super().__init__(prefix=prefix)
         self.prefix = prefix
 
     def process_command(self, string: str):
@@ -244,7 +245,6 @@ class CommandLine(Commander):
     """
 
     def __init__(self):
-        super(Commands, self).__init__()
-        super(CommandParser, self).__init__()
+        super().__init__(prefix="")
 
     parse = staticmethod(parse_to_argv)
