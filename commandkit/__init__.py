@@ -6,6 +6,6 @@ from .core import CommandError, CommandParser
 __all__ = ["Command", "Commander", "CommandLine", "CommandError", "CommandParser"]
 
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __author__ = "programminglaboratorys"
 __description__ = "simple library to implement commands, events dispatchers"

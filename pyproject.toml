@@ -1,6 +1,6 @@
 [project]
 name = "commandkit"
-version = "0.2.0"
+version = "0.3.0"
 ############
 
 description = "simple library to implement commands, events dispatchers"
