@@ -90,4 +90,5 @@ class EventManager:
                 the listener
 
         """
-        return self.add_listen(func)
+        self.add_listen(func)
+        return func
