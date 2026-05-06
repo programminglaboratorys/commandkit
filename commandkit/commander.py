@@ -5,8 +5,8 @@ import inspect
 from typing import Any, Callable
 
 from .core import Command, CommandNotFoundError, BadArgument
-from .transformers.view import StringView
-from .transformers.converter import run_converters, Greedy
+from .parsers.view import StringView
+from .parsers.converter import run_converters, Greedy
 
 
 class CommandManager:
