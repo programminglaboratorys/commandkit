@@ -160,12 +160,3 @@ class CommandManager:
 
 		return await self.invoke(command, view)
 
-
-class CommandLine(CommandManager):
-	"""
-	A commander variant specialized for command-line style parsing.
-	"""
-
-	def __init__(self):
-		"""initialize the command line interface"""
-		super().__init__(prefix="")
