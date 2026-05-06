@@ -3,7 +3,7 @@ name = "commandkit"
 version = "0.3.0"
 ############
 
-description = "simple library to implement commands, events dispatchers"
+description = "a standalone library to bring discord.py developer experience to your python applications, focus on building your logic rather then an event manager or command manager"
 readme = "README.md"
 keywords = ["commands", "python3", "commandkit", "events"]
 license = { file = "LICENSE" }
