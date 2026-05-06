@@ -18,7 +18,7 @@ python -m pip install commandkit
 
 if that didn't work, try replacing `pip` with `pip3`.
 
-need help? or have bugs to report, let me know in [here](https://discord.gg/vzEZnC7CM8)
+need help? or have bugs to report, let me know in [here](https://github.com/programminglaboratorys/commandkit/issues)
 
 ## simple example
 
