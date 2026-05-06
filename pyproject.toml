@@ -1,6 +1,7 @@
 [project]
 name = "commandkit"
 version = "0.3.0"
+
 ############
 
 description = "a standalone library to bring discord.py developer experience to your python applications, focus on building your logic rather then an event manager or command manager"
@@ -24,6 +25,9 @@ dev = [
     "sphinx-rtd-theme"
     ]
 
+
+[tool.setuptools.packages.find]
+include = ["commandkit*"]
 
 [project.urls]
 Changelog = "https://github.com/programminglaboratorys/commandkit/blob/main/CHANGELOG"
