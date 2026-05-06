@@ -1,11 +1,11 @@
 import asyncio
 import unittest
-from commandkit import CommandLine, BadArgument, CommandNotFoundError, Greedy
+from commandkit import CommandManager, BadArgument, CommandNotFoundError, Greedy
 from typing import Union, Optional, Literal
 
 class TestCommands(unittest.IsolatedAsyncioTestCase):
 	async def asyncSetUp(self):
-		self.cmder = CommandLine()
+		self.cmder = CommandManager(prefix="")
 
 	async def test_basic_command(self):
 		@self.cmder.command()
