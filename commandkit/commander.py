@@ -1,250 +1,171 @@
-"""module contains a class to manage commands"""
+"""module contains classes to manage and dispatch commands"""
+from typing import Dict
+from typing import Optional
+import inspect
+from typing import Any, Callable
 
-from typing import Callable, Awaitable
-from dataclasses import dataclass, field
-
-from .core import CommandParser, CommandError
-from .parser import parse_annotation, parse_to_argv
-
-
-class BadArgument(CommandError):
-    """when a parsing command arguments fails"""
-
-    def __init__(self, message, parameters, command):
-        super().__init__(message)
-        self.parameters = parameters
-        self.command = command
+from .core import Command, CommandNotFoundError, BadArgument
+from .transformers.view import StringView
+from .transformers.converter import run_converters, Greedy
 
 
-class CommandNotFoundError(CommandError):
-    """when command doesn't exist"""
+class CommandManager:
+	"""
+	A class to manage and dispatch commands.
+	"""
 
-    def __init__(self, message, name):
-        super().__init__(message)
-        self.name = name
+	def __init__(self, prefix: str = ""):
+		"""initialize the commander
 
+		Parameters
+		----------
+			prefix: str (default: "")
+				the prefix that command strings must start with
+		"""
+		self.prefix = prefix
+		self.commands: Dict[str, Command] = {}
 
-@dataclass(slots=True)
-class BasicCommand:
-    """
-    Represents a basic command.
-    """
+	def add_command(self, command: Command):
+		"""add a new command
 
-    function: Callable | Awaitable
-    """The function or coroutine representing the command."""
-    description: str
-    """A short description of the command."""
-    name: str
-    """The name of the command. If not provided, defaults to the function's name."""
-    extra: dict = field(default_factory=dict)
-    """Additional metadata."""
+		Parameters
+		----------
+			command: Command
+				the command object to add
+		"""
+		self.commands[command.name] = command
+		for alias in command.aliases:
+			self.commands[alias] = command
 
-    def __call__(self, *args, **kw):
-        """Calls the associated function with the provided arguments."""
-        return self.function(*args, **kw)
+	def get_command(self, name: str) -> Optional[Command]:
+		"""get command by name or alias
 
-    def __str__(self):
-        """Returns the name of the command or the function's name."""
-        return self.name if self.name else self.function.__name__
+		Parameters
+		----------
+			name: str
+				the name or alias of the command
 
-    def __eq__(self, other):
-        if not isinstance(other, BasicCommand):
-            raise TypeError(f"object of type '{type(other).__name__}' is not supported")
-        return self.function == other.function
+		Returns
+		-------
+			Optional[Command]
+				the command object if found
+		"""
+		return self.commands.get(name)
 
-    def __hash__(self):
-        return hash(self.function)
+	def command(self, name: str = None, description: str = None, **kwargs):
+		"""a decorator to register a command
 
-    def __repr__(self):
-        return (
-            f"{type(self).__name__}({self.function.__name__}"
-            f"{':'+self.description if self.description else ''})"
-        )
+		Parameters
+		----------
+			name: str (default: None)
+				the name of the command
+			description: str (default: None)
+				a short description of the command
+		"""
+		def decorator(callback: Callable) -> Command:
+			cmd = Command(callback, name=name, description=description, **kwargs)
+			self.add_command(cmd)
+			return cmd
+		return decorator
 
+	async def invoke(self, command: Command, view: StringView) -> Any:
+		"""invokes a command by parsing arguments from a StringView
 
-class BasicCommands:
-    """
-    A command manager
-    """
+		Parameters
+		----------
+			command: Command
+				the command to invoke
+			view: StringView
+				the view containing raw arguments
+		"""
+		signature = inspect.signature(command.callback)
+		args = []
+		kwargs = {}
 
-    commands: dict[str, BasicCommand]
-    """A dictionary mapping command names to their corresponding BasicCommand objects."""
+		for param in signature.parameters.values():
+			view.skip_ws()
+			if isinstance(param.annotation, Greedy):
+				greedy = param.annotation
+				values = []
+				while not view.eof:
+					view.skip_ws()
+					prev_index = view.index
+					arg_str = view.get_quoted_word()
+					if arg_str is None:
+						break
+					
+					try:
+						value = run_converters(greedy.converter, arg_str)
+						values.append(value)
+					except Exception:
+						view.index = prev_index
+						break
+				
+				if not values and param.default is inspect.Parameter.empty:
+					raise BadArgument(f"Missing greedy argument: {param.name}", param.name, command)
+				
+				value = values
+			else:
+				if view.eof:
+					if param.default is inspect.Parameter.empty:
+						raise BadArgument(f"Missing argument: {param.name}", param.name, command)
+					continue
 
-    default_command_object = BasicCommand
-    """the default class to wrap functions"""
+				if param.kind == inspect.Parameter.KEYWORD_ONLY:
+					arg_str = view.read_rest().strip()
+				else:
+					arg_str = view.get_quoted_word()
+				
+				if arg_str is None or (param.kind == inspect.Parameter.KEYWORD_ONLY and not arg_str):
+					if param.default is inspect.Parameter.empty:
+						raise BadArgument(f"Missing argument: {param.name}", param.name, command)
+					continue
 
-    def get_name_or_callable_name(self, name: Callable | str):
-        """either get the name of a callable or just return the name if it's a string
+				if param.annotation is not inspect.Parameter.empty:
+					try:
+						value = run_converters(param.annotation, arg_str)
+					except Exception as e:
+						raise BadArgument(str(e), param.name, command) from e
+				else:
+					value = arg_str
 
-        Parameters
-        ----------
-            name: Callable | str
-                callable or str
+			if param.kind == inspect.Parameter.KEYWORD_ONLY:
+				kwargs[param.name] = value
+			else:
+				args.append(value)
 
-        Raises
-        ------
-            ValueError
-                excepted str/callable but got type(s) instead
+		return await command.invoke(*args, **kwargs)
 
-        Returns
-        -------
-            str
-                the name of the callable or str
-        """
-        if (not callable(name)) and (not isinstance(name, str)):
-            raise ValueError(
-                f"excepted str/callable but got {type(name).__name__!r} instead"
-            )
-        if callable(name):
-            name = name.__name__
-        return name
+	async def process_command(self, string: str) -> Any:
+		"""processes a raw string to find and execute a command
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.commands = {}
+		Parameters
+		----------
+			string: str
+				the raw command string to process
+		"""
+		view = StringView(string)
+		if self.prefix:
+			if not view.skip_string(self.prefix):
+				return None
 
-    def add_command(
-        self, function: Callable, name: str = None, description: str = None, **kw
-    ) -> BasicCommand:
-        """add a new command
+		view.skip_ws()
+		cmd_name = view.get_quoted_word()
+		if not cmd_name:
+			return None
 
-        Parameters
-        ----------
-            function: Callable
-                The function or coroutine representing the command.
-            name: str (default: None)
-                The name of the command. Defaults to the function's name if not provided.
-            description: str (default: None)
-                A short description of the command.
+		command = self.get_command(cmd_name)
+		if not command:
+			raise CommandNotFoundError(f"Command '{cmd_name}' not found", cmd_name)
 
-        Returns
-        -------
-            BasicCommand
-                object representing the added command.
-        """
-        name = name if name is not None else function.__name__
-        command_object = (
-            self.default_command_object(
-                function, description, name, kw.get("extra", {})
-            )
-            if not isinstance(function, BasicCommand)
-            else function
-        )
-        for ali in kw.get("aliases", [name]):
-            self.commands[ali] = command_object
-        return command_object
-
-    def remove_command(self, name: Callable | str):
-        """remove a command"""
-        name = self.get_name_or_callable_name(name)
-        if name in self.commands:
-            del self.commands[name]
-        return
-
-    def command_exist(self, name: str):
-        """name(s) in commands"""
-        return name in self.commands
-
-    def get_command(self, name: Callable | str):
-        """get command function raise CommandNotFoundError if command not in self.commands"""
-        if self.command_exist(name):
-            return self.commands[self.get_name_or_callable_name(name)]
-        else:
-            raise CommandNotFoundError(f"command {name!r} do not exists", name)
-
-    def call_command(self, name: Callable | str, *args, **kw):
-        """call command(s)"""
-        return self.get_command(name)(*args, **kw)
-
-    def command(self, *args, **kw):
-        """a wrapper of self.add_command as a decorator"""
-
-        def inner(function) -> BasicCommand:
-            return self.add_command(function, *args, **kw)
-
-        return inner
-
-    def __call__(self, name: Callable | str, *args, **kw):
-        """call command(s)"""
-        return self.call_command(name, *args, **kw)
-
-    def __repr__(self):
-        return f"{type(self).__name__}({list(self.commands.keys())})"
+		return await self.invoke(command, view)
 
 
-class Command(BasicCommand):
-    """
-    Represents a command.
-    """
+class CommandLine(CommandManager):
+	"""
+	A commander variant specialized for command-line style parsing.
+	"""
 
-    def parse_annotation(self, args, kwargs):
-        """wrapper of parse_annotation"""
-        return parse_annotation(self.function, args, kwargs)
-
-    def _parse(self, *_args, **_kw):
-        try:
-            args, kw = self.parse_annotation(_args, _kw)
-        except Exception as error:
-            raise BadArgument("bad argument", (_args, _kw), self) from error
-        return args, kw
-
-    def __call__(self, *_args, **_kw):
-        """Calls the associated function with the provided arguments."""
-        args, kw = self._parse(*_args, **_kw)
-        return self.function(*args, **kw)
-
-
-class Commands(BasicCommands):
-    """
-    An advanced command manager, inherits from BasicCommands
-    """
-
-    commands: dict[str, Command]
-    """A dictionary mapping command names to their corresponding Command objects."""
-
-    default_command_object = Command
-    """the default class to wrap functions"""
-
-
-class Commander(Commands, CommandParser):
-    """
-    A class to manage commands, inherits from Commands, CommandParser
-
-    Parameters
-    ----------
-        prefix: str
-            the prefix that command strings must start with.
-    """
-
-    def __init__(self, prefix: str):
-        super().__init__(prefix=prefix)
-        self.prefix = prefix
-
-    def process_command(self, string: str):
-        """processing string to a command
-
-        Parameters
-        ----------
-            string: str
-                the string to process
-
-        Returns
-        -------
-            Any
-                whatever command(s) returns
-        """
-        name, *args = self.parse(string)
-        command = self.get_command(name)
-        return command(*args)
-
-
-class CommandLine(Commander):
-    """
-    A class that simluates argv parsing, inherits from Commander.
-    check :func:`parser.parse_to_argv` for more info.
-    """
-
-    def __init__(self):
-        super().__init__(prefix="")
-
-    parse = staticmethod(parse_to_argv)
+	def __init__(self):
+		"""initialize the command line interface"""
+		super().__init__(prefix="")
