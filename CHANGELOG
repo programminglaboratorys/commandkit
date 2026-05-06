@@ -21,3 +21,7 @@
 - more lightweight
 - better type conversion
 - exact DX as discord.py
+
+  0.3.1 (2026/5/6)
+
+- hotfix: fix broken internal imports and documentation metadata
