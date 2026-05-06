@@ -28,10 +28,15 @@ commandkit.core module
    :undoc-members:
    :show-inheritance:
 
-commandkit.parser module
-------------------------
+commandkit.parsers module
+-------------------------
 
-.. automodule:: commandkit.parser
+.. automodule:: commandkit.parsers.converter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: commandkit.parsers.view
    :members:
    :undoc-members:
    :show-inheritance:
